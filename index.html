@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Payback Prediction</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    select option {
+      background-color: #070b3f; /* dark */
+      color: white;
+    }
+    select option:checked {
+      background-color: #6366f1; /* indigo */
+      color: white;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    body {
+      background: linear-gradient(135deg, #054d1d 0%, #054d1d 100%);
+      min-height: 100vh;
+    }
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 50;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body class="font-sans">
+  <div id="app"></div>
+
+  <div id="predictionModal" class="modal-bg">
+    <div class="bg-white/20 backdrop-blur-lg rounded-xl p-6 max-w-md w-full text-white relative">
+      <button onclick="closeModal()" class="absolute top-2 right-2 text-white text-lg font-bold">×</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    let token = localStorage.getItem("token");
+
+    function navigate(page) {
+      if (page === "dashboard" && !token) page = "login";
+      render(page);
+    }
+
+    function checkAuth() {
+      if (!token) {
+        navigate("login");
+        return false;
+      }
+      return true;
+    }
+
+    // Login form
+    function renderLogin() {
+      return `
+        <div class="min-h-screen flex items-center justify-center">
+          <form id="loginForm" class="bg-white/20 p-8 rounded-xl backdrop-blur-lg w-full max-w-md">
+            <h1 class="text-2xl font-bold text-white mb-6 text-center">Login</h1>
+            <input type="text" name="username" placeholder="Username" required class="mb-4 w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+            <input type="password" name="password" placeholder="Password" required class="mb-4 w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+            <button type="submit" class="w-full bg-white text-purple-600 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Login</button>
+          </form>
+        </div>
+      `;
+    }
+
+    // Dashboard
+    function renderDashboard() {
+      return `
+        <div class="min-h-screen flex items-center justify-center p-6">
+  <div class="max-w-3xl w-full">
+    <div class="glass rounded-2xl p-6">
+      <h2 class="text-2xl font-bold text-white mb-6 text-center">Single Prediction</h2>
+      <form id="singleForm" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <input type="text" name="name" placeholder="Full Name" required class="col-span-2 px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+          <input type="number" step="any" name="annual_income" placeholder="Annual Income" required class="px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+          <input type="number" step="any" name="debt_to_income_ratio" placeholder="Debt to Income Ratio" required class="px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+          <input type="number" step="any" name="credit_score" placeholder="Credit Score" required class="px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+          <input type="number" step="any" name="loan_amount" placeholder="Loan Amount" required class="px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+          <input type="number" step="any" name="interest_rate" placeholder="Interest Rate (%)" required class="px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+          <select name="gender" required class="px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+          <select name="marital_status" required class="px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+            <option value="" disabled selected>Select Marital Status</option>
+            <option value="Single">Single</option>
+            <option value="Married">Married</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Widowed">Widowed</option>
+          </select>
+                    <select name="education_level" required class="px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+                      <option value="" disabled selected>Select Education Level</option>
+                      <option value="High School">High School</option>
+                      <option value="Associate">Associate</option>
+                      <option value="Bachelor">Bachelor's</option>
+                      <option value="Master">Master's</option>
+                      <option value="Doctorate">Doctorate</option>
+                    </select>
+                    <select name="employment_status" required class="px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+                      <option value="" disabled selected>Select Employment Status</option>
+                      <option value="Employed">Employed</option>
+                      <option value="Self-Employed">Self-Employed</option>
+                      <option value="Unemployed">Unemployed</option>
+                      <option value="Retired">Retired</option>
+                    </select>
+                    <select name="loan_purpose" required class="px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+                      <option value="" disabled selected>Select Loan Purpose</option>
+                      <option value="Home">Home</option>
+                      <option value="Car">Car</option>
+                      <option value="Education">Education</option>
+                      <option value="Business">Business</option>
+                      <option value="Debt Consolidation">Debt Consolidation</option>
+                      <option value="Medical">Medical</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <select name="grade_subgrade" required class="col-span-2 px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+                      <option value="" disabled selected>Select Grade Subgrade</option>
+                      <option value="A1">A1 </option>
+                      <option value="A2">A2 </option>
+                      <option value="A3">A3 </option>
+                      <option value="B1">B1 </option>
+                      <option value="B2">B2 </option>
+                      <option value="B3">B3 </option>
+                      <option value="C1">C1 </option>
+                      <option value="C2">C2 </option>
+                      <option value="C3">C3 </option>
+                      <option value="D1">D1 </option>
+                      <option value="D2">D2 </option>
+                      <option value="D3">D3 </option>
+                      <option value="E1">E1 </option>
+                      <option value="E2">E2 </option>
+                      <option value="F1">F1 </option>
+                    </select>
+                  </div>
+        <button type="submit" class="w-full bg-white text-purple-600 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">Predict</button>
+      </form>
+    </div>
+  </div>
+</div>
+        </div>
+      `;
+    }
+
+    function showModal(content) {
+      document.getElementById("modalContent").innerHTML = content;
+      document.getElementById("predictionModal").style.display = "flex";
+    }
+
+    function closeModal() { 
+      document.getElementById("predictionModal").style.display = "none"; 
+    }
+
+    function setupDashboardListeners() {
+      const form = document.getElementById("singleForm");
+      if (!form) return;
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const obj = Object.fromEntries(formData.entries());
+        obj.annual_income = parseFloat(obj.annual_income);
+        obj.debt_to_income_ratio = parseFloat(obj.debt_to_income_ratio);
+        obj.credit_score = parseFloat(obj.credit_score);
+        obj.loan_amount = parseFloat(obj.loan_amount);
+        obj.interest_rate = parseFloat(obj.interest_rate);
+        // Dummy prediction without backend
+        const probability = Math.random();
+        const data = {
+          probability: probability,
+          prediction: probability > 0.5 ? 1 : 0,
+          id: Math.floor(Math.random()*10000)
+        };
+        const approveProb = (data.probability*100).toFixed(2);
+        const rejectProb = ((1-data.probability)*100).toFixed(2);
+        showModal(`
+          <p class="font-semibold text-lg mb-3">Prediction Result:</p>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-medium">Will Payback (Approve):</span>
+              <span class="text-green-300 font-bold">${approveProb}%</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="font-medium">Will Not Payback (Reject):</span>
+              <span class="text-red-300 font-bold">${rejectProb}%</span>
+            </div>
+            <div class="mt-3 pt-3 border-t border-white/20">
+              <p class="text-center font-semibold text-lg">${data.prediction===1?'APPROVED':'REJECTED'}</p>
+            </div>
+            <p class="text-xs mt-2 text-white/60 text-center">Saved to history (ID: ${data.id})</p>
+          </div>
+        `);
+        e.target.reset();
+      });
+    }
+
+    function setupAuthListeners() {
+      const form = document.getElementById("loginForm");
+      if (!form) return;
+      form.addEventListener("submit", (e)=>{
+        e.preventDefault();
+        // Any username/password works
+        token = "dummy_token";
+        localStorage.setItem("token", token);
+        navigate("dashboard");
+      });
+    }
+
+    function render(page){
+      const app = document.getElementById("app"); 
+      if(page === "login"){ 
+        app.innerHTML = renderLogin(); 
+        setupAuthListeners();
+      } else if(page === "dashboard"){
+        if(!checkAuth()) return; 
+        app.innerHTML = renderDashboard(); 
+        setupDashboardListeners();
+      } 
+    }
+
+    window.logout = function(){
+      localStorage.removeItem("token"); 
+      token = null; 
+      navigate("login");
+    };
+
+    if(token) navigate("dashboard"); else navigate("login");
+  </script>
+</body>
+</html>
